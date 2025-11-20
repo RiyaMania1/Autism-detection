@@ -1,0 +1,206 @@
+<div class="app-wrapper">
+  <!-- Animated Background -->
+  <div class="background-animation">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header-section">
+      <div class="brain-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2z"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+      <h1 class="main-title">
+        {{ title }}
+        <span class="sparkle">✨</span>
+      </h1>
+      <p class="subtitle">Advanced ML-based Early Autism Detection System</p>
+
+      <!-- Stats Bar -->
+      <div class="stats-bar" *ngIf="modelInfo">
+        <div class="stat-card">
+          <div class="stat-value">{{ (modelInfo.accuracy * 100).toFixed(1) }}%</div>
+          <div class="stat-label">Accuracy</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ modelInfo.features.length }}</div>
+          <div class="stat-label">Features</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">2min</div>
+          <div class="stat-label">Duration</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Form Section -->
+    <div class="form-container">
+      <div class="section-header">
+        <div class="header-icon">✓</div>
+        <div>
+          <h2 class="section-title">Screening Questionnaire</h2>
+          <p class="section-description">Select Yes or No for each question</p>
+        </div>
+      </div>
+
+      <!-- Screening Questions -->
+      <div class="questions-grid">
+        <div class="question-card" *ngFor="let question of screeningQuestions; let i = index" 
+             [style.animation-delay]="(i * 0.07) + 's'">
+          <div class="question-icon">
+            {{ ['🔊', '🖼️', '📋', '💭', '🔄', '🔢', '👥', '😊', '🎭', '🤝'][i] }}
+          </div>
+          <label class="question-label">{{ question.label }}</label>
+          <div class="score-buttons">
+            <button 
+              class="score-btn no-btn" 
+              [class.active]="formData[question.id] === 0" 
+              (click)="formData[question.id] = 0">
+              No
+            </button>
+            <button 
+              class="score-btn yes-btn" 
+              [class.active]="formData[question.id] === 1" 
+              (click)="formData[question.id] = 1">
+              Yes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Demographics Section -->
+      <div class="demographics-card">
+        <h3 class="demo-title">Demographics</h3>
+        <div class="form-group">
+          <label for="age" class="input-label">Age (years):</label>
+          <input 
+            type="number" 
+            id="age" 
+            [(ngModel)]="formData.age" 
+            min="1" 
+            max="120"
+            class="age-input">
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn-primary" (click)="onPredict()" [disabled]="loading">
+          <span class="btn-icon" *ngIf="!loading">🧠</span>
+          <span class="btn-icon spinner" *ngIf="loading">⟳</span>
+          <span>{{ loading ? 'Analyzing...' : 'Make Prediction' }}</span>
+        </button>
+        <button class="btn-secondary" (click)="resetForm()">
+          <span class="btn-icon">↻</span>
+          <span>Reset Form</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-alert" *ngIf="error">
+      <span class="error-icon">⚠️</span>
+      <p>{{ error }}</p>
+    </div>
+
+    <!-- Prediction Results -->
+    <div class="results-container" *ngIf="predictionResult">
+      <div class="section-header">
+        <div class="header-icon warning">⚡</div>
+        <h2 class="section-title">Detection Results</h2>
+      </div>
+      
+      <!-- Main Prediction Card -->
+      <div class="prediction-card"
+           [ngClass]="predictionResult.prediction.includes('YES') ? 'risk-positive' : 'risk-negative'">
+        
+        <div class="prediction-header">
+          <h3 class="prediction-title">{{ predictionResult.prediction }}</h3>
+        </div>
+        
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <div class="metric-label">Detection Rate</div>
+            <div class="metric-value">{{ predictionResult.detection_rate.toFixed(1) }}%</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Confidence</div>
+            <div class="metric-value">{{ getConfidencePercentage(predictionResult.confidence) }}%</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">Risk Level</div>
+            <div class="metric-value risk-badge" [style.color]="getRiskColor(predictionResult.risk_level)">
+              {{ predictionResult.risk_level }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Probability Visualization -->
+        <div class="probability-section">
+          <div class="probability-item">
+            <div class="probability-header">
+              <span class="prob-label">Autism Detected</span>
+              <span class="prob-percentage">{{ (predictionResult.probability_yes * 100).toFixed(1) }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill positive"
+                   [style.width]="(predictionResult.probability_yes * 100) + '%'">
+              </div>
+            </div>
+          </div>
+
+          <div class="probability-item">
+            <div class="probability-header">
+              <span class="prob-label">No Autism</span>
+              <span class="prob-percentage">{{ (predictionResult.probability_no * 100).toFixed(1) }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill negative"
+                   [style.width]="(predictionResult.probability_no * 100) + '%'">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total Score -->
+        <div class="total-score-banner">
+          <strong>Total Screening Score:</strong> {{ getTotalScore() }} / 10
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="recommendations-card">
+        <h3 class="recommendations-title">
+          <span class="title-icon">💡</span>
+          Recommendations
+        </h3>
+        <ul class="recommendations-list">
+          <li *ngIf="predictionResult.probability_yes > 0.7" class="recommendation-item high-risk">
+            <span class="rec-icon">🔴</span>
+            <span>High detection rate. Please consult with a healthcare professional for further assessment.</span>
+          </li>
+          <li *ngIf="predictionResult.probability_yes >= 0.4 && predictionResult.probability_yes <= 0.7" 
+              class="recommendation-item medium-risk">
+            <span class="rec-icon">🟡</span>
+            <span>Moderate detection rate. Consider professional evaluation.</span>
+          </li>
+          <li *ngIf="predictionResult.probability_yes < 0.4" class="recommendation-item low-risk">
+            <span class="rec-icon">🟢</span>
+            <span>Low detection rate. Continue regular health checkups.</span>
+          </li>
+          <li class="recommendation-item info">
+            <span class="rec-icon">ℹ️</span>
+            <span>This tool is for screening purposes only and should not replace professional diagnosis.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

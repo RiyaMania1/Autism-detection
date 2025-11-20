@@ -1,0 +1,14 @@
+# Ignore virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Node modules (if Angular/Node project)
+node_modules/
+
+# Python cache
+__pycache__/
+
+# VS Code settings
+.vscode/
